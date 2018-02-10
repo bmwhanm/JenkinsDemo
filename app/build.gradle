@@ -1,0 +1,132 @@
+apply plugin: 'com.android.application'
+
+def getDate() {
+    def date = new Date()
+    def formattedDate = date.format('yyyy-MM-dd-HH-mm')
+    return formattedDate
+}
+
+def verCode = 1
+
+android {
+    compileSdkVersion 26
+    defaultConfig {
+        applicationId "com.hq.jenkinsdemo"
+        minSdkVersion 19
+        targetSdkVersion 26
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+        multiDexEnabled true
+        versionCode verCode
+        versionName APP_VERSION
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = [moduleName: project.getName()]
+            }
+        }
+
+        flavorDimensions "versionCode"
+
+    }
+    signingConfigs {
+        signingConfig {
+            //由于本地打包使用的是本机上的KeyStore
+            //而Jenkins打包用的是服务器上的KeyStore
+            //两个路径不一样
+            if("true".equals(IS_JENKINS)){
+                storeFile file("服务器上KeyStore的路径")
+            }else {
+                storeFile file(STORE_FILE_PATH)
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            zipAlignEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.signingConfig
+        }
+        debug {  }
+    }
+//    dexOptions {
+//        javaMaxHeapSize "2g"
+//    }
+
+
+    //渠道Flavors
+    productFlavors {
+        _0{
+            manifestPlaceholders = [UMENG_CHANNEL_VALUE: "wandoujia"]
+        }
+        _1{
+            manifestPlaceholders = [UMENG_CHANNEL_VALUE: "xiaomi"]
+        }
+    }
+
+
+    lintOptions {
+        abortOnError true
+    }
+
+    applicationVariants.all { variant ->
+        if (variant.buildType.name == "release") {
+            variant.outputs.all {
+                if (outputFileName.endsWith('.apk')) {
+                    //这里使用之前定义apk文件名称
+                    def fileName = "QTSCompany_v${defaultConfig.versionName}_${defaultConfig.versionCode}${variant.productFlavors[0].name}_release.apk"
+                    outputFileName = fileName
+                }
+            }
+        }
+    }
+
+
+    //修改生成的apk名字及输出文件夹
+//    applicationVariants.all { variant ->
+//        variant.outputs.each { output ->
+//            //新名字
+//            def newName
+//            //时间戳
+//            def timeNow
+//            //输出文件夹
+//            def outDirectory
+//            //是否为Jenkins打包，输出路径不同
+//            if ("true".equals(IS_JENKINS)) {
+//                //Jenkins打包输出到服务器路径
+//                timeNow = '2018/10/1'
+//                //BUILD_PATH为服务器输出路径
+//                outDirectory = './'
+//                //AutoBuildTest-v1.0.1-xiaomi-release.apk
+//                newName = 'AutoBuildTest-v' + APP_VERSION + '-' + variant.productFlavors[0].name + '-' + variant.buildType.name + '.apk'
+//            } else {
+//                //本机打包输出在本机路径
+//                timeNow = getDate()
+//                outDirectory = output.outputFile.getParent()
+//                if ('debug'.equals(variant.buildType.name)) {
+//                    newName = "AutoBuildTest-v${APP_VERSION}-debug.apk"
+//                } else {
+//                    //AutoBuildTest-v1.0.1-xiaomi-release.apk
+//                    newName = 'AutoBuildTest-v' + APP_VERSION + '-' + variant.productFlavors[0].name + '-' + variant.buildType.name + '.apk'
+//                }
+//            }
+//            output.outputFile = new File(outDirectory+'/'+timeNow, newName)
+//        }
+//    }
+
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.1'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+
+//    api 'com.umeng.analytics:analytics:6.1.3'
+
+}
